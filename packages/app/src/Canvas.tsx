@@ -19,6 +19,7 @@ export const Canvas = React.forwardRef<
     }
 
     const canvas = new fabric.Canvas(canvasRef.current);
+    // canvas.backgroundColor = 'red'
 
     DEV_MODE && (window.canvas = canvas);
 

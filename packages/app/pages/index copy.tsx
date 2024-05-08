@@ -23,7 +23,6 @@ const FabricPage: NextPage<{
 
       const eraser = (canvas.freeDrawingBrush = new EraserBrush(canvas));
       eraser.width = 30;
-      eraser.color = 'red';
 
       const group = 'deep';
       const rect = new fabric.Rect({
@@ -42,7 +41,7 @@ const FabricPage: NextPage<{
         new fabric.Rect({
           width: 100,
           height: 100,
-          fill: 'green',
+          fill: 'blue',
           erasable: true,
         }),
         new fabric.Rect({
@@ -50,7 +49,7 @@ const FabricPage: NextPage<{
           height: 100,
           left: 50,
           top: 50,
-          fill: 'orange',
+          fill: 'magenta',
           erasable: false,
         }),
         new fabric.Circle({
@@ -79,7 +78,7 @@ const FabricPage: NextPage<{
           radius: 50,
           left: 100,
           top: 100,
-          fill: 'pink',
+          fill: 'cyan',
           erasable: true,
         }),
         new fabric.Group(
@@ -88,7 +87,7 @@ const FabricPage: NextPage<{
               radius: 50,
               left: 0,
               top: 100,
-              fill: 'purple',
+              fill: 'cyan',
               clipPath: new fabric.Circle({
                 radius: 50,
                 left: -25,
@@ -115,15 +114,15 @@ const FabricPage: NextPage<{
 
       canvas.add(
         rect,
-        // ...(!!group
-        //   ? [
-        //       new fabric.Group(objects, {
-        //         erasable: group,
-        //         subTargetCheck: true,
-        //         interactive: true,
-        //       }),
-        //     ]
-        //   : objects),
+        ...(!!group
+          ? [
+              new fabric.Group(objects, {
+                erasable: group,
+                subTargetCheck: true,
+                interactive: true,
+              }),
+            ]
+          : objects),
         circle
       );
 
@@ -151,22 +150,22 @@ const FabricPage: NextPage<{
       return;
     }
     const eraser = canvas.freeDrawingBrush as EraserBrush;
-    // return eraser.on('end', async (e) => {
-    //   e.preventDefault();
-    //   await eraser.commit(e.detail);
-    //   const transparent = await Promise.all(
-    //     e.detail.targets.map(
-    //       async (target) => [target, await isTransparent(target)] as const
-    //     )
-    //   );
-    //   const fullyErased = transparent
-    //     .filter(([, transparent]) => transparent)
-    //     .map(([object]) => object);
-    //   fullyErased.forEach((object) => (object.parent || canvas).remove(object));
-    //   canvas.requestRenderAll();
-    //   fullyErased.length &&
-    //     console.log('Removed the following fully erased objects', fullyErased);
-    // });
+    return eraser.on('end', async (e) => {
+      e.preventDefault();
+      await eraser.commit(e.detail);
+      const transparent = await Promise.all(
+        e.detail.targets.map(
+          async (target) => [target, await isTransparent(target)] as const
+        )
+      );
+      const fullyErased = transparent
+        .filter(([, transparent]) => transparent)
+        .map(([object]) => object);
+      fullyErased.forEach((object) => (object.parent || canvas).remove(object));
+      canvas.requestRenderAll();
+      fullyErased.length &&
+        console.log('Removed the following fully erased objects', fullyErased);
+    });
   }, [ref, removeFullyErased]);
 
   useEffect(() => {

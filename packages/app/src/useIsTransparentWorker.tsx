@@ -1,5 +1,5 @@
 import { isTransparent } from '@erase2d/fabric';
-import { type FabricObject } from 'fabric';
+import { FabricObject } from 'fabric';
 import { useCallback, useEffect, useRef } from 'react';
 
 export function useIsTransparentWorker() {

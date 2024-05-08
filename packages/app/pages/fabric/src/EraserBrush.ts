@@ -1,6 +1,6 @@
-import { erase } from '@erase2d/core';
 import * as fabric from 'fabric';
 import { FabricObject, Group, Path } from 'fabric';
+import { erase } from '../../core/src/erase';
 import { ClippingGroup } from './ClippingGroup';
 import { draw } from './ErasingEffect';
 
@@ -23,7 +23,7 @@ export type ErasingEvent<T extends ErasingEventType> = CustomEvent<
 
 function walk(objects: FabricObject[], path: Path): FabricObject[] {
   return objects.flatMap((object) => {
-    if (!object.erasable || !object.intersectsWithObject(path)) {
+    if (!object.erasable || !object.intersectsWithObject(path)) { // 检查对象是否与另一个对象相交
       return [];
     } else if (object instanceof Group && object.erasable === 'deep') {
       return walk(object.getObjects(), path);
@@ -168,14 +168,17 @@ const setCanvasDimensions = (
  * const eraser = new EraserBrush(canvas);
  * eraser.on('redraw', (e) => {
  *    // prevent effect redraw on pointer down (e.g. useful if canvas didn't change)
+ *    // 防止指针向下时的重画效果(例如，如果画布没有改变，则有用)
  *    e.detail.type === 'start' && e.preventDefault());
  *    // prevent effect redraw after canvas has rendered (effect will become stale)
+ *    // 防止画布渲染后效果重绘(效果会过时)
  *    e.detail.type === 'render' && e.preventDefault());
  * });
  */
 export class EraserBrush extends fabric.PencilBrush {
   /**
    * When set to `true` the brush will create a visual effect of undoing erasing
+   * 当设置为“true”时，笔刷将创建一个取消擦除的视觉效果
    */
   inverted = false;
 
@@ -226,7 +229,7 @@ export class EraserBrush extends fabric.PencilBrush {
    */
   _setBrushStyles(ctx: CanvasRenderingContext2D = this.canvas.contextTop) {
     super._setBrushStyles(ctx);
-    ctx.strokeStyle = 'red';
+    ctx.strokeStyle = 'black';
   }
 
   /**
@@ -262,6 +265,7 @@ export class EraserBrush extends fabric.PencilBrush {
 
     this.active = true;
 
+    // 当 event 可被取消（cancelable 值为 true），且 event 中至少有一个事件处理程序调用了 Event.preventDefault() 方法时，返回 false。否则，返回 true
     this.eventEmitter.dispatchEvent(
       new CustomEvent('redraw', {
         detail: { type: 'start' },
@@ -270,18 +274,18 @@ export class EraserBrush extends fabric.PencilBrush {
     ) && this.drawEffect();
 
     // consider a different approach
-    this._disposer = this.canvas.on('after:render', ({ ctx }) => {
-      if (ctx !== this.canvas.getContext()) {
-        return;
-      }
-      this.eventEmitter.dispatchEvent(
-        new CustomEvent('redraw', {
-          detail: { type: 'render' },
-          cancelable: true,
-        })
-      ) && this.drawEffect();
-      this._render();
-    });
+    // this._disposer = this.canvas.on('after:render', ({ ctx }) => {
+    //   if (ctx !== this.canvas.getContext()) {
+    //     return;
+    //   }
+    //   this.eventEmitter.dispatchEvent(
+    //     new CustomEvent('redraw', {
+    //       detail: { type: 'render' },
+    //       cancelable: true,
+    //     })
+    //   ) && this.drawEffect();
+    //   this._render();
+    // });
 
     super.onMouseDown(pointer, context);
   }
@@ -306,7 +310,7 @@ export class EraserBrush extends fabric.PencilBrush {
   onMouseUp(context: fabric.TEvent<fabric.TPointerEvent>): boolean {
     this.active && super.onMouseUp(context);
     this.active = false;
-    this._disposer?.();
+    // this._disposer?.();
     delete this._disposer;
     return false;
   }
@@ -328,11 +332,12 @@ export class EraserBrush extends fabric.PencilBrush {
     path.set(
       this.inverted
         ? {
-            globalCompositeOperation: 'source-over',
-            // stroke: 'white',
+            // globalCompositeOperation 在绘制新形状时应用的合成操作的类型
+            globalCompositeOperation: 'source-over', // 路径被绘制在已有图形的上方
+            stroke: 'white',
           }
         : {
-            globalCompositeOperation: 'destination-out',
+            globalCompositeOperation: 'destination-out', // 已有的图形只保留在已有图形与路径不重叠的地方，重叠部分变透明。
             stroke: 'black',
             opacity: new fabric.Color(this.color).getAlpha(),
           }
@@ -341,7 +346,7 @@ export class EraserBrush extends fabric.PencilBrush {
   }
 
   async commit({ path, targets }: EventDetailMap['end']) {
-    new Map(
+    const result = new Map(
       await Promise.all([
         ...targets.map(async (object) => {
           return [object, await eraseObject(object, path)] as const;
@@ -371,6 +376,9 @@ export class EraserBrush extends fabric.PencilBrush {
           }),
       ])
     );
+
+    console.log('==result==', result)
+    return result
   }
 
   /**
@@ -390,6 +398,8 @@ export class EraserBrush extends fabric.PencilBrush {
 
     const path = this.createPath(this.convertPointsToSVGPath(points));
     const targets = walk(this.canvas.getObjects(), path);
+
+    console.log('==path', path)
 
     this.eventEmitter.dispatchEvent(
       new CustomEvent('end', {

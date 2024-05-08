@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <canvas id="myCanvas" width="200" height="200"></canvas>
+  <script>
+      var offscreenCanvas = document.createElement('canvas'); // 创建一个离屏Canvas
+      var offscreenContext = offscreenCanvas.getContext('2d');
+      offscreenCanvas.width = 200
+      offscreenCanvas.height = 200
+
+      // 在离屏Canvas上进行一些绘制...
+      offscreenContext.fillStyle = 'blue';
+      offscreenContext.fillRect(10, 10, 50, 50);
+
+      // 然后将离屏Canvas的内容绘制到屏幕Canvas上
+      var screenCanvas = document.getElementById('myCanvas');
+      var screenContext = screenCanvas.getContext('2d');
+      screenContext.fillStyle = 'red';
+      screenContext.fillRect(40, 10, 60, 60);
+      // destination-out: 保留现有不重叠的 source-in: 保留新绘制重叠的 source-over: 新的形状会被绘制在已有图形的上方
+      // screenContext.globalCompositeOperation = "source-over" 
+      // screenContext.globalCompositeOperation = "source-in" 
+      screenContext.globalCompositeOperation = "destination-out" 
+      screenContext.drawImage(offscreenCanvas, 0, 0);
+  </script>
+</body>
+</html>
